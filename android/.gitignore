@@ -1,0 +1,15 @@
+# Machine-specific SDK and IDE settings
+local.properties
+.idea/
+*.iml
+
+# Gradle/Kotlin caches and build outputs
+.gradle/
+.kotlin/
+**/build/
+.externalNativeBuild/
+.cxx/
+
+# Signing secrets
+*.jks
+*.keystore

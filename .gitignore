@@ -1,0 +1,12 @@
+# Shared local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.jks
+*.keystore
+
+# Repository-level editor and OS metadata
+/.idea/
+.DS_Store
+Thumbs.db

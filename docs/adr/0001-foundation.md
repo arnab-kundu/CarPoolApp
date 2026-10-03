@@ -1,0 +1,5 @@
+# ADR 0001 ? Foundation before provider-backed flows
+Status: accepted for initial local scaffold; production decisions await review.
+Use the recommended native Kotlin/Compose + MVVM and modular NestJS/PostGIS architecture. Keep the Android project at root for direct Android Studio use and backend under backend/. Phase 0/1 can run Android independently with explicit offline fixtures while external providers are unselected.
+Do not emulate successful identity, verification, payment or published rides. Auth/ride API skeletons fail closed; demos only save DRAFT. Maintain initial identity/vehicle/ride migration and planned API contracts. Financial/trip schemas are deferred with their phase. Introduce Hilt, Retrofit, Room, DataStore and WorkManager alongside actual adapters instead of unused empty wiring. This stages the specified stack without replacing it.
+Consequences: reviewable installable app foundation; no real transactions or route matching until later phases. A complete production marketplace is not delivered by the scaffold.

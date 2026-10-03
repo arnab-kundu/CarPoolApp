@@ -1,0 +1,3 @@
+# Android design
+Together is a provisional local app name, not a checked trademark. Forest green, lime accent and warm paper surfaces; rounded cards; clear typography and labeled navigation. Explore switches passenger/driver intent. Search exposes origin, destination, date and seat controls. Details disclose fixture verification. Offer ride saves a validated local draft. Empty Inbox and Profile communicate unavailable integrations.
+Accessibility: content descriptions for interactive icons, Material semantics, scalable text, labeled input and native date/time dialogs. Screens scroll for small devices. TalkBack, large-font and device screenshot review still need execution. Production map selection and onboarding are future work.

@@ -1,0 +1,261 @@
+Carpool Android AppCodex Project Specification
+Reference product category: sRide / Quick Ride / BlaBlaCar-style scheduled carpool marketplace
+Purpose: source-of-truth specification for Codex / AI-assisted implementation
+1. Project Objective
+Build a production-ready Android carpool marketplace where a user can act as either a passenger or a driver. Drivers publish planned journeys and available seats. Passengers search for rides whose routes and departure times are compatible with their pickup and destination. The platform manages matching, booking, trip lifecycle, notifications, payments, ratings, safety controls, and administration.
+The first release should focus on scheduled carpooling rather than Uber-style instant taxi dispatch. Architecture must support future recurring office rides, intercity rides, corporate carpools, automatic matching, subscriptions, and enhanced safety features without requiring a rewrite.
+2. Core Product Rules
+One Android application supports both passenger and driver modes.
+A driver publishes a route, departure time, available seats, vehicle, and ride contribution/price.
+A passenger searches using origin, destination, date/time, and seat count.
+Matching is route-based and time-based; exact origin/destination equality is not required.
+The backend is authoritative for ride state, seats, pricing, payments, verification, and trip state.
+Do not trust client-side verification flags, prices, payment status, or booking status.
+Use explicit state machines for booking, trip, payment, and verification workflows.
+Precise location is collected only when required for product functionality, especially during an active trip.
+3. MVP Scope
+Phone OTP authentication and token-based sessions
+User profile and profile photo
+Driver profile and verification status
+Vehicle registration and vehicle documents
+Publish/edit/cancel a scheduled ride
+Map-based origin/destination selection and place autocomplete
+Route calculation and storage
+Geospatial ride search and matching
+Ride details and driver profile
+Ride request, accept/reject, seat reservation, cancellation
+Push notifications
+Basic in-app chat between matched/confirmed participants
+Payment creation, verification, webhook processing, refund support
+Active-trip location sharing
+Trip PIN/OTP for trip start
+Trip completion
+Ratings and reviews
+Ride history
+Report/block user
+Basic SOS / emergency contact flow
+Web admin dashboard for users, drivers, rides, payments, reports, and verification
+4. Deferred Features
+Do not block the MVP on the following. Design extension points, but implement later:
+Instant/on-demand ride dispatch
+Recurring commuter ride automation
+Women-only or advanced preference matching
+Corporate accounts and employer programs
+Subscriptions and loyalty/reward systems
+Masked voice calling
+Advanced fraud/risk scoring
+Machine-learning ranking
+Multi-region microservice architecture
+5. Recommended Technology Stack
+Area
+Technology
+Android
+Kotlin, Jetpack Compose, MVVM + Clean Architecture, Coroutines/Flow, Hilt, Retrofit or Ktor Client, Room, DataStore, WorkManager
+Maps & Location
+Google Maps SDK for Android, Places, Routes API, Geocoding, FusedLocationProviderClient
+Notifications
+Firebase Cloud Messaging
+Backend
+Node.js, TypeScript, NestJS
+Database
+PostgreSQL + PostGIS
+Cache / realtime
+Redis + WebSocket/Socket.IO
+Object storage
+S3-compatible object storage
+Payments
+Razorpay or Cashfree after business/compliance review
+Admin
+Next.js + TypeScript
+Infrastructure
+Docker, AWS or equivalent cloud, GitHub Actions
+Observability
+Structured logs, Sentry, metrics/tracing via CloudWatch/OpenTelemetry
+6. High-Level Architecture
+Android App (Passenger + Driver)        |   HTTPS / WebSocket        |API / Auth / Rate Limiting        |+-----------------------------+| Users | Rides | Bookings    || Trips | Payments | Chat     || Verification | Notifications|+-----------------------------+        |+-----------------------------+| PostgreSQL + PostGIS        || Redis                       || Object Storage              |+-----------------------------+        |External Providers:Google Maps / Routes / PlacesFCMOTP/SMSPayment GatewayKYC/Verification provider
+Start as a modular monolith. Keep domain boundaries clear, but do not create independent deployable microservices until scale or team ownership justifies them.
+7. Android Project Structure
+app/core/  common/  network/  database/  location/  maps/  designsystem/  model/feature/  auth/  home/  profile/  vehicle/  verification/  search/  publishride/  ridedetails/  booking/  trip/  payment/  chat/  rating/  safety/  history/
+Each feature should expose UI, ViewModel/presentation state, domain use cases where useful, and data abstractions. Avoid feature-to-feature implementation dependencies. Shared contracts belong in core/domain modules.
+8. Backend Domain Modules
+AuthModule - OTP, login, access/refresh tokens, logout/session revocation
+UserModule - profile, preferences, account lifecycle
+VehicleModule - vehicle CRUD and document metadata
+VerificationModule - driver/vehicle/KYC verification workflows
+RideModule - publish/update/cancel rides and route metadata
+MatchingModule - candidate search, route compatibility, ranking
+BookingModule - requests, acceptance, seat reservation, cancellation
+TripModule - trip start/PIN, active trip, location updates, completion
+PaymentModule - payment orders, webhooks, ledger, refunds
+ChatModule - conversations/messages scoped to rides/bookings
+NotificationModule - push notification orchestration
+RatingModule - post-trip ratings/reviews
+SafetyModule - reports, blocks, emergency contacts, SOS events
+AdminModule - moderation and operational endpoints
+9. Core Data Model
+usersuser_profilesuser_devicesuser_verificationsvehiclesvehicle_documentsridesride_routesride_waypointsride_requestsbookingstripstrip_locationspaymentspayment_transactionsrefundsledger_entriesconversationsmessagesratingsreviewsnotificationsemergency_contactsreportsblocked_usersaudit_logs
+Important geographic values should use PostGIS geography/geometry types. Store the normalized driver route as a LINESTRING (or suitable geography representation) in addition to any encoded polyline needed by clients.
+10. Ride Entity - Minimum Fields
+iddriver_idvehicle_idorigin_place_idorigin_location        // PostGIS pointorigin_addressdestination_place_iddestination_location   // PostGIS pointdestination_addressdeparture_timeavailable_seatstotal_seatsprice_per_seatcurrencyroute_geometry         // PostGIS lineencoded_polylineroute_distance_metersroute_duration_secondsstatuscreated_atupdated_at
+11. Matching Engine
+The matching engine is a core differentiator. It must find rides whose route passes close enough to both the passenger pickup and drop-off while respecting route direction, departure-time tolerance, available seats, and acceptable driver detour.
+11.1 Candidate filters
+Ride is active/searchable.
+Ride departure time falls within the passenger's allowed time window.
+Available seats >= requested seats.
+Passenger pickup is within a configurable distance from the driver route.
+Passenger drop-off is within a configurable distance from the driver route.
+Pickup occurs before drop-off along the driver's route direction.
+Estimated detour is within a configurable threshold.
+11.2 Initial ranking model
+match_score =    pickup_distance_score  + dropoff_distance_score  + departure_time_score  + detour_score  + route_overlap_score
+Thresholds must be configuration, not hard-coded application constants. Example starting values may be 2 km pickup/drop proximity, +/-30 minutes departure tolerance, and <=10 minutes driver detour; validate these through real-world testing.
+11.3 PostGIS responsibilities
+Spatial indexes for route and point queries
+ST_DWithin or equivalent proximity filtering
+Projection/location along route to verify pickup-before-drop direction
+Distance calculations where appropriate
+Candidate reduction before expensive external route/detour calculations
+12. External APIs and Services
+Google Maps Platform
+Maps SDK for Android - maps and markers
+Places/Autocomplete - user-friendly origin/destination input
+Routes API - route, distance, duration, route matrix/detour calculations
+Geocoding/Reverse Geocoding - address/location conversion where needed
+Authentication / OTP
+Use Firebase Phone Auth or an approved SMS/OTP provider.
+Backend issues application access and refresh tokens after successful identity verification.
+Firebase Cloud Messaging
+Ride request, acceptance, rejection, cancellation, driver arrival, payment, trip and rating notifications.
+Payment Gateway
+Create payment/order server-side.
+Treat signed gateway webhook events as authoritative.
+Support idempotent webhook processing, refunds and reconciliation.
+KYC / Verification
+Integrate only after selecting a legally/commercially appropriate provider.
+Documents must never be publicly addressable.
+13. Authentication and Security
+Phone OTP is the initial login mechanism.
+Use short-lived access tokens plus refresh tokens.
+Store refresh/session records server-side so sessions can be revoked.
+Android secrets must not include payment, SMS, KYC, database, or JWT signing credentials.
+Restrict Android Maps/API keys using application/signing restrictions supported by the provider.
+Use TLS everywhere.
+Encrypt sensitive data at rest and use private object-storage access for documents.
+Add rate limiting to OTP, login, search, chat, booking, payment, and location endpoints.
+Implement authorization at resource level: users may only access rides/bookings/chats they are entitled to.
+Create audit logs for sensitive admin, verification, payment, and safety actions.
+14. State Machines
+14.1 Booking
+REQUESTED -> ACCEPTED -> PAYMENT_PENDING -> CONFIRMED -> TRIP_STARTED -> COMPLETEDAlternative terminal/intermediate states:REJECTEDCANCELLED_BY_DRIVERCANCELLED_BY_PASSENGERNO_SHOWPAYMENT_FAILEDREFUNDED
+14.2 Verification
+NOT_SUBMITTED -> SUBMITTED -> UNDER_REVIEW -> VERIFIEDAlternative:REJECTEDEXPIRED
+14.3 Ride
+DRAFT -> PUBLISHED -> IN_PROGRESS -> COMPLETED                    \-> CANCELLED                    \-> EXPIRED
+15. API Surface - Initial Version
+POST   /auth/send-otpPOST   /auth/verify-otpPOST   /auth/refreshPOST   /auth/logoutGET    /users/mePUT    /users/meDELETE /users/mePOST   /vehiclesGET    /vehiclesGET    /vehicles/:idPUT    /vehicles/:idDELETE /vehicles/:idPOST   /verification/driverPOST   /verification/vehicleGET    /verification/statusPOST   /ridesPOST   /rides/searchGET    /rides/:idPUT    /rides/:idDELETE /rides/:idPOST   /rides/:id/requestsPOST   /ride-requests/:id/acceptPOST   /ride-requests/:id/rejectGET    /bookingsGET    /bookings/:idPOST   /bookings/:id/cancelPOST   /trips/:id/verify-pinPOST   /trips/:id/startPOST   /trips/:id/locationPOST   /trips/:id/completePOST   /payments/createPOST   /payments/verifyPOST   /payments/webhooks/providerPOST   /payments/:id/refundGET    /conversationsGET    /conversations/:id/messagesPOST   /conversations/:id/messagesPOST   /ratingsPOST   /reportsPOST   /sosGET    /notifications
+16. Realtime Events
+trip.location.updatedtrip.startedtrip.completeddriver.arrivingride.requestedride.request.acceptedride.request.rejectedbooking.cancelledmessage.createdpayment.updated
+Use WebSockets for realtime UX. Durable business state must still be persisted in PostgreSQL. Redis may be used for pub/sub, presence, short-lived cache, locks, and rate-limit counters.
+17. Payments and Ledger Rules
+Never mark a booking paid solely from the Android callback.
+Verify signatures and process provider webhooks idempotently.
+Maintain internal payment_transaction and ledger_entry records.
+Store provider transaction IDs for reconciliation.
+Model platform fee, driver amount, refund amount and settlement status independently.
+Confirm the final fund-flow/marketplace model with the selected payment provider and appropriate Indian legal/accounting advice before production launch.
+18. Location and Trip Tracking
+Use FusedLocationProviderClient on Android.
+Track continuously only during the active trip or another clearly user-visible use case.
+Use the Android foreground-service/location model required by the target SDK and Play policies.
+Send timestamp, coordinates, accuracy, speed/heading when available.
+Backend rejects obviously stale/invalid updates.
+Redis can hold the latest live location; persist a reduced/appropriate trip history according to product and retention requirements.
+Passenger clients receive authorized live updates over WebSocket.
+19. Safety Requirements
+Verified user/driver/vehicle status visible where appropriate
+Trip PIN before starting a passenger trip
+Emergency contacts
+Share-trip flow
+SOS event creation and operational handling
+Report and block user
+Ratings/reviews
+Ride history
+Admin suspension/ban controls
+Safety and moderation audit trail
+20. Admin Application
+Dashboard/operational metrics
+User search and account status
+Driver and vehicle verification queue
+Ride and booking inspection
+Payment/refund inspection
+Reports and abuse moderation
+SOS/safety event handling
+User suspension/ban
+Support notes/tickets
+Configuration for matching thresholds and selected operational settings
+21. Non-Functional Requirements
+All mutating payment/booking endpoints should support idempotency where duplicate requests are possible.
+Prevent overbooking using transactions/locking or equivalent concurrency-safe seat reservation.
+Use database migrations; never mutate production schema manually.
+Use UTC timestamps in storage and convert at presentation boundaries.
+Paginate list/search endpoints.
+Add structured error codes rather than relying on human-readable messages.
+Validate all input server-side.
+Use feature flags/configuration for thresholds that require operational tuning.
+Write unit tests for matching, pricing, booking state transitions and payment webhooks.
+Write integration tests against PostgreSQL/PostGIS for geospatial queries.
+Android should have ViewModel/use-case tests and Compose UI tests for critical flows.
+Log correlation/request IDs across API requests and background processing.
+22. India Launch / Compliance Workstream
+Compliance is a parallel product workstream, not a final release checkbox. Before public launch, obtain professional review of the exact carpool/cost-sharing business model, state-level transport requirements, payment fund flow, KYC/document processing, privacy obligations, retention, terms, and grievance/support processes.
+Review applicable Motor Vehicle Aggregator Guidelines and state implementation for launch regions.
+Review DPDP Act/Rules obligations for personal data processing.
+Create privacy policy, terms, consent flows, account deletion and data-retention rules.
+Define incident response and access controls for KYC and precise location data.
+Confirm tax/invoicing/accounting treatment and driver/payment settlement model.
+23. Implementation Phases
+Phase 0 - Repository & specifications: Create monorepo/repositories, environment conventions, ADRs, API contract, database ERD, CI and local Docker environment.
+Phase 1 - Foundation: Android architecture/design system; NestJS modules; PostgreSQL/PostGIS; Redis; migrations; auth scaffolding.
+Phase 2 - Identity & vehicles: OTP, sessions, profile, vehicle CRUD, document upload, verification state.
+Phase 3 - Maps & ride publishing: Places, map selection, Routes integration, publish/edit/cancel ride, route geometry persistence.
+Phase 4 - Matching/search: PostGIS candidate query, direction checks, time/seat filters, detour validation, ranking and search UI.
+Phase 5 - Booking: Requests, accept/reject, concurrency-safe seat reservation, cancellations, push notifications.
+Phase 6 - Realtime trip: WebSocket, foreground location tracking, trip PIN, trip lifecycle, chat, safety basics.
+Phase 7 - Payments: Gateway, webhook verification, ledger, refunds, reconciliation.
+Phase 8 - Admin & hardening: Admin portal, moderation, observability, security, privacy controls, performance tests and release readiness.
+24. Codex Working Instructions
+When Codex works on this project, follow these rules:
+Treat this document as the high-level product/architecture source of truth unless a newer project ADR/spec explicitly overrides it.
+Do not silently change the stack, architectural boundaries, database strategy, or core state machines.
+Before implementing a large feature, inspect existing code, migrations, tests and relevant project docs.
+Prefer small, reviewable commits/changes over broad rewrites.
+Do not introduce a new dependency when the existing stack already provides the capability without first explaining the reason.
+Keep business logic out of Android Composables and backend controllers.
+Keep payment, matching, booking and verification business rules testable independently from transport/UI code.
+Never hard-code production secrets, API keys, matching thresholds or payment configuration.
+Generate database migrations for schema changes.
+For API changes, update API documentation/contracts and tests in the same change.
+For database changes, update schema documentation/ERD.
+For architecture-changing decisions, add an ADR before or with implementation.
+Do not mark TODO placeholders as completed functionality.
+If a requirement is ambiguous and affects security, payments, privacy, legal compliance or irreversible schema design, stop and request clarification.
+25. Suggested Repository Documentation
+docs/  PRD.md  ARCHITECTURE.md  DATABASE.md  API.md  MATCHING_ENGINE.md  SECURITY.md  COMPLIANCE.md  DESIGN.md  RULES.md  TASK.md  MEMORY.md  adr/
+PRD defines behavior and scope. ARCHITECTURE defines system boundaries. DATABASE owns the data model. API owns contracts. MATCHING_ENGINE owns geospatial matching rules. SECURITY/COMPLIANCE own non-functional constraints. RULES contains agent coding rules. TASK contains the current implementation objective. MEMORY records durable project decisions and known constraints.
+26. Definition of Done for MVP
+A verified driver can publish a scheduled ride with a valid map route.
+A passenger can search and receive geographically/time-compatible rides.
+Passenger can request seats and driver can accept/reject without overbooking.
+Confirmed participants receive notifications and can communicate.
+Payment status is securely verified server-side.
+A confirmed trip can be started with a PIN and live location is shared during the active trip.
+Trip can be completed and both parties can rate/report appropriately.
+Admins can inspect users, verification, rides, bookings, payments and reports.
+Critical backend flows have automated tests.
+Application has production logging, crash/error monitoring, backups and documented deployment.
+Privacy, transport/business-model, payment and operational compliance reviews required for launch have been completed.
+27. First Codex Task
+Do not begin by implementing every feature. First create/validate the repository structure and project documents. Then produce the initial PostgreSQL/PostGIS schema, backend module skeleton, Android module skeleton, local Docker environment, and API contract for authentication + ride publishing/search. Submit that foundation for review before building booking, realtime tracking, or payments.
+
+End of specification

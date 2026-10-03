@@ -1,0 +1,2 @@
+# Durable decisions
+Workspace was empty. Source preserved as DOCX and text. Android Studio project is in android/; backend/ is NestJS foundation. Native app is currently explicit offline demo. No booking/payment/tracking implementation before foundation review. Driver drafts remain in memory and are never published. Production provider choices remain unresolved. Java 17 is required for selected Gradle/AGP combination. android/local.properties is machine-specific and ignored.

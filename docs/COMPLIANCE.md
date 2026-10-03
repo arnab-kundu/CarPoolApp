@@ -1,0 +1,3 @@
+# Launch decisions pending
+Source document requires professional review of the exact Indian cost-sharing/transport business model, launch-state requirements, payment fund flow, KYC processing, personal data obligations, consent/retention/deletion, support/grievance, incident response, tax/accounting and driver settlements.
+No legal interpretation or approval is asserted here. Confirm providers and operational policies before their production implementation. This foundation is a local development demo, not launch approval. No live fund transfer, document upload, precise location, or SOS operational dispatch exists.

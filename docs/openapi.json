@@ -1,0 +1,637 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Together Carpool foundation",
+    "version": "0.1.0",
+    "description": "Current scaffolds return 503 except health. Production success behavior in API.md."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/v1",
+      "description": "Local development only"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Working foundation liveness check",
+        "responses": {
+          "200": {
+            "description": "status=ok, phase=foundation, integrationsReady=false"
+          }
+        }
+      }
+    },
+    "/auth/send-otp": {
+      "post": {
+        "summary": "Request provider OTP",
+        "description": "Foundation handler returns 503 after validation. Success contract reserved for production adapter phase.",
+        "responses": {
+          "503": {
+            "description": "AUTH_NOT_CONFIGURED or RIDES_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or extra input fields"
+          },
+          "201": {
+            "description": "Planned provider-backed success; unavailable in the foundation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpChallenge"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtp"
+              }
+            }
+          }
+        },
+        "x-foundation-status": "unavailable"
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "summary": "Verify identity and create session",
+        "description": "Foundation handler returns 503 after validation. Success contract reserved for production adapter phase.",
+        "responses": {
+          "503": {
+            "description": "AUTH_NOT_CONFIGURED or RIDES_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or extra input fields"
+          },
+          "201": {
+            "description": "Planned provider-backed success; unavailable in the foundation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtp"
+              }
+            }
+          }
+        },
+        "x-foundation-status": "unavailable"
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Rotate refresh session",
+        "description": "Foundation handler returns 503 after validation. Success contract reserved for production adapter phase.",
+        "responses": {
+          "503": {
+            "description": "AUTH_NOT_CONFIGURED or RIDES_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or extra input fields"
+          },
+          "201": {
+            "description": "Planned provider-backed success; unavailable in the foundation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Refresh"
+              }
+            }
+          }
+        },
+        "x-foundation-status": "unavailable"
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Revoke session",
+        "description": "Foundation handler returns 503 after validation. Success contract reserved for production adapter phase.",
+        "responses": {
+          "503": {
+            "description": "AUTH_NOT_CONFIGURED or RIDES_NOT_CONFIGURED"
+          },
+          "400": {
+            "description": "Invalid or extra input fields"
+          },
+          "201": {
+            "description": "Planned session revocation; unavailable in the foundation"
+          }
+        }
+      }
+    },
+    "/rides": {
+      "post": {
+        "summary": "Publish verified scheduled ride",
+        "description": "Foundation handler returns 503 after validation. Success contract reserved for production adapter phase.",
+        "responses": {
+          "503": {
+            "description": "AUTH_NOT_CONFIGURED or RIDES_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or extra input fields"
+          },
+          "201": {
+            "description": "Planned provider-backed success; unavailable in the foundation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ride"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishRide"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        ],
+        "x-foundation-status": "unavailable"
+      }
+    },
+    "/rides/search": {
+      "post": {
+        "summary": "Search geographically compatible rides",
+        "description": "Foundation handler returns 503 after validation. Success contract reserved for production adapter phase.",
+        "responses": {
+          "503": {
+            "description": "AUTH_NOT_CONFIGURED or RIDES_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or extra input fields"
+          },
+          "201": {
+            "description": "Planned provider-backed success; unavailable in the foundation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPage"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRides"
+              }
+            }
+          }
+        },
+        "x-foundation-status": "unavailable"
+      }
+    },
+    "/rides/{id}": {
+      "get": {
+        "summary": "Retrieve ride details (foundation: unavailable)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "503": {
+            "description": "RIDES_NOT_CONFIGURED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid UUID"
+          },
+          "200": {
+            "description": "Planned provider-backed success; unavailable in the foundation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ride"
+                }
+              }
+            }
+          }
+        },
+        "x-foundation-status": "unavailable"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Location": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "placeId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "address",
+          "placeId"
+        ]
+      },
+      "SendOtp": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{7,14}$"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "VerifyOtp": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "challengeId",
+          "code"
+        ]
+      },
+      "Refresh": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "PublishRide": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "departureTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "availableSeats": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "contributionMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "vehicleId",
+          "origin",
+          "destination",
+          "departureTime",
+          "availableSeats",
+          "contributionMinor"
+        ]
+      },
+      "SearchRides": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "departureTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "seats": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "departureTime",
+          "seats"
+        ]
+      },
+      "OtpChallenge": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "challengeId",
+          "expiresAt"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "expiresInSeconds",
+          "userId"
+        ]
+      },
+      "Ride": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "departureTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "availableSeats": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6
+          },
+          "totalSeats": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "pricePerSeatMinor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "encodedPolyline": {
+            "type": "string"
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "driverId",
+          "vehicleId",
+          "origin",
+          "destination",
+          "departureTime",
+          "availableSeats",
+          "totalSeats",
+          "pricePerSeatMinor",
+          "currency",
+          "status",
+          "encodedPolyline",
+          "distanceMeters",
+          "durationSeconds"
+        ]
+      },
+      "SearchPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ride"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "UnavailableError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "AUTH_NOT_CONFIGURED",
+              "RIDES_NOT_CONFIGURED"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
